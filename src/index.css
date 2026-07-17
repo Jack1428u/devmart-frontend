@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+
+
+/* ============================================================
+   DESIGN TOKENS — Paleta de marca DevMart
+   ============================================================ */
+@theme {
+  --color-brand-50: #E6F0FF;
+  --color-brand-100: #B8D4FF;
+  --color-brand-200: #8AB9FF;
+  --color-brand-300: #5C9DFF;
+  --color-brand-400: #2E82FF;
+  --color-brand-500: #0066FF;
+  --color-brand-600: #0054D1;
+  --color-brand-700: #0041A3;
+  --color-brand-800: #002F75;
+  --color-brand-900: #001D47;
+  --color-brand-950: #000A1A;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ============================================================
+   BASE RESET
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #ffffff;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ============================================================
+   UTILITY — Skeleton animation
+   ============================================================ */
+@keyframes skeleton-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+}
