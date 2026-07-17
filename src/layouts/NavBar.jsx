@@ -83,12 +83,20 @@ export default function NavBar() {
                                 </button>
                             </div>
                         ) : (
-                            <Link
-                                to="/login"
-                                className="inline-flex items-center justify-center text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] rounded-lg px-4 py-2 transition-colors duration-150"
-                            >
-                                Iniciar Sesión
-                            </Link>
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    to="/register"
+                                    className="inline-flex items-center justify-center text-sm font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 rounded-lg px-4 py-2 transition-colors duration-150"
+                                >
+                                    Registrarse
+                                </Link>
+                                <Link
+                                    to="/login"
+                                    className="inline-flex items-center justify-center text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] rounded-lg px-4 py-2 transition-colors duration-150"
+                                >
+                                    Iniciar Sesión
+                                </Link>
+                            </div>
                         )}
                     </div>
 
@@ -162,13 +170,22 @@ export default function NavBar() {
                                 </button>
                             </div>
                         ) : (
-                            <Link
-                                to="/login"
-                                onClick={() => setMobileOpen(false)}
-                                className="flex items-center justify-center w-full text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] rounded-lg px-4 py-2.5 transition-colors"
-                            >
-                                Iniciar Sesión
-                            </Link>
+                            <div className="space-y-2">
+                                <Link
+                                    to="/login"
+                                    onClick={() => setMobileOpen(false)}
+                                    className="flex items-center justify-center w-full text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] rounded-lg px-4 py-2.5 transition-colors"
+                                >
+                                    Iniciar Sesión
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    onClick={() => setMobileOpen(false)}
+                                    className="flex items-center justify-center w-full text-sm font-semibold text-gray-700 border border-gray-200 hover:border-gray-300 rounded-lg px-4 py-2.5 transition-colors"
+                                >
+                                    Registrarse
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </div>

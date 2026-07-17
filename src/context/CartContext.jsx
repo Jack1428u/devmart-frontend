@@ -6,7 +6,7 @@ import { getCart, addToCart, removeFromCart } from '../services/cart.service';
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-    // Lista de CartDetail objects: [{ id, cartId, productId, quantity, product: { productName, price, ... } }]
+    // Lista de CartDetail objects: [{ id, cartId, productId, quantity, product: { productName, price, stock, ... } }]
     const [cartDetails, setCartDetails] = useState([]);
     const [isCartLoading, setIsCartLoading] = useState(false);
     const [cartError, setCartError] = useState(null);
@@ -23,7 +23,6 @@ export const CartProvider = ({ children }) => {
         try {
             const data = await getCart();
             // Se espera que el backend devuelva { cartDetails: [...] } o directamente el array.
-            // Ajusta según la forma real de la respuesta de tu backend.
             setCartDetails(data.cartDetails ?? data ?? []);
         } catch (error) {
             console.error('Error al cargar el carrito:', error);
@@ -49,12 +48,59 @@ export const CartProvider = ({ children }) => {
     }, [isAuthenticated, fetchCart]);
 
     /**
-     * Wrapper de addToCart: llama al servicio y re-sincroniza el estado completo
-     * del carrito con el backend para mantener consistencia.
+     * Devuelve la cantidad de un producto que ya está en el carrito.
      * @param {number|string} productId
-     * @param {number} quantity
+     * @returns {number} Cantidad en carrito (0 si no está).
      */
-    const addCartItem = async (productId, quantity = 1) => {
+    const getQuantityInCart = useCallback((productId) => {
+        const item = cartDetails.find((d) => d.productId === productId);
+        return item?.quantity ?? 0;
+    }, [cartDetails]);
+
+    /**
+     * Calcula el stock disponible real de un producto:
+     *   stock disponible = stockOriginal - cantidadYaEnCarrito
+     * Nunca es negativo.
+     * @param {number|string} productId
+     * @param {number} stockOriginal - Stock total que reportó el backend al cargar el producto.
+     * @returns {number}
+     */
+    const getAvailableStock = useCallback((productId, stockOriginal) => {
+        const inCart = getQuantityInCart(productId);
+        return Math.max(0, stockOriginal - inCart);
+    }, [getQuantityInCart]);
+
+    /**
+     * Wrapper de addToCart con validación de stock del lado del cliente.
+     * Antes de llamar al backend comprueba que la cantidad total que quedaría
+     * en el carrito no supere el stock original del producto.
+     *
+     * Si se pasa `stockOriginal`, se aplica la restricción client-side.
+     * Si no se pasa, la validación queda delegada solo al backend.
+     *
+     * @param {number|string} productId
+     * @param {number} quantity - Cantidad a agregar.
+     * @param {number|null} stockOriginal - Stock total del producto (opcional pero recomendado).
+     */
+    const addCartItem = async (productId, quantity = 1, stockOriginal = null) => {
+        // Validación client-side cuando tenemos el stock disponible
+        if (stockOriginal !== null) {
+            const alreadyInCart = getQuantityInCart(productId);
+            const totalAfterAdd = alreadyInCart + quantity;
+
+            if (totalAfterAdd > stockOriginal) {
+                const remaining = Math.max(0, stockOriginal - alreadyInCart);
+                if (remaining === 0) {
+                    throw new Error(
+                        'Stock agotado'
+                    );
+                }
+                throw new Error(
+                    `Solo puedes agregar ${remaining} unidad${remaining !== 1 ? 'es' : ''} más (stock disponible: ${stockOriginal}).`
+                );
+            }
+        }
+
         try {
             await addToCart(productId, quantity);
             // Re-fetch para asegurar consistencia con el estado del servidor
@@ -98,6 +144,7 @@ export const CartProvider = ({ children }) => {
     /**
      * Subtotal monetario del carrito.
      * Requiere que cada CartDetail tenga su relación `product` con `price` cargada.
+     * Usa la cantidad real del carrito (no cantidades locales) para el cálculo.
      */
     const subtotal = cartDetails.reduce((sum, item) => {
         const price = parseFloat(item.product?.price ?? 0);
@@ -113,6 +160,8 @@ export const CartProvider = ({ children }) => {
         addCartItem,
         removeCartItem,
         fetchCart,
+        getQuantityInCart,
+        getAvailableStock,
     };
 
     return (

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { loginService, logoutService, refreshTokenService } from '../services/auth.service';
+import { loginService, logoutService, registerService, refreshTokenService } from '../services/auth.service';
 
 // Creamos el contexto
 const AuthContext = createContext();
@@ -97,6 +97,27 @@ export const AuthProvider = ({ children }) => {
             setIsLoading(false);
         }
     };
+    const register = async (name, email, password) => {
+        setIsLoading(true);
+        try {
+            const data = await registerService(name, email, password);
+            
+            // 1. Guardar en el estado de React
+            setToken(data.token);
+            const userData = { id: data.id, name: data.name, email: data.email };
+            setUser(userData);
+
+            // 2. Persistir en localStorage para que sobreviva recargas de página
+            localStorage.setItem('auth_token', data.token);
+            localStorage.setItem('user', JSON.stringify(userData));
+
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     const logout = async () => {
         setIsLoading(true);
@@ -116,7 +137,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isLoading, login, logout, refreshToken }}>
+        <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isLoading, login, logout, register, refreshToken }}>
             {children}
         </AuthContext.Provider>
     );
@@ -128,4 +149,4 @@ export const useAuth = () => {
         throw new Error("useAuth debe usarse dentro de un AuthProvider");
     }
     return context;
-};
+};

@@ -14,7 +14,7 @@ export function ProductDetail() {
     const [addError, setAddError] = useState(null);
 
     // Obtenemos la función del CartContext
-    const { addCartItem } = useCart();
+    const { addCartItem, getAvailableStock } = useCart();
 
     useEffect(() => {
         const loadProduct = async () => {
@@ -38,8 +38,10 @@ export function ProductDetail() {
         setAddError(null);
 
         try {
-            await addCartItem(product.id, quantity);
+            await addCartItem(product.id, quantity, product.stock);
             setAddStatus('success');
+            // Resetear la cantidad a 1 tras agregar exitosamente
+            setQuantity(1);
 
             // Resetear el feedback de éxito luego de 2.5 segundos
             setTimeout(() => setAddStatus('idle'), 2500);
@@ -134,70 +136,97 @@ export function ProductDetail() {
                         <hr className="border-gray-100" />
 
                         {/* Quantity selector */}
-                        {product.stock > 0 && (
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="quantity-input" className="text-sm font-medium text-gray-700">
-                                    Cantidad
-                                </label>
-                                <div className="inline-flex items-center border border-gray-200 rounded-xl overflow-hidden w-fit">
-                                    {/* Decrement button — llama al mismo setQuantity del estado existente */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                                        disabled={quantity <= 1 || addStatus === 'loading'}
-                                        className="px-4 py-2.5 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-100 text-lg leading-none font-medium select-none"
-                                        aria-label="Disminuir cantidad"
-                                    >
-                                        −
-                                    </button>
-                                    <input
-                                        id="quantity-input"
-                                        type="number"
-                                        min="1"
-                                        max={product.stock}
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(Number(e.target.value))}
-                                        disabled={addStatus === 'loading'}
-                                        className="w-14 text-center text-sm font-semibold text-gray-900 border-x border-gray-200 py-2.5 bg-white outline-none focus:bg-[#E6F0FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    />
-                                    {/* Increment button */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                                        disabled={quantity >= product.stock || addStatus === 'loading'}
-                                        className="px-4 py-2.5 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-100 text-lg leading-none font-medium select-none"
-                                        aria-label="Aumentar cantidad"
-                                    >
-                                        +
-                                    </button>
+                        {product.stock > 0 && (() => {
+                            // Stock real = stock original − lo que ya está en el carrito
+                            const availableStock = getAvailableStock(product.id, product.stock);
+                            return (
+                                <div className="flex flex-col gap-2">
+                                    <label htmlFor="quantity-input" className="text-sm font-medium text-gray-700">
+                                        Cantidad
+                                    </label>
+                                    {availableStock === 0 ? (
+                                        <p className="text-sm font-medium text-amber-600">
+                                            Stock Agotado
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <div className="inline-flex items-center border border-gray-200 rounded-xl overflow-hidden w-fit">
+                                                {/* Decrement button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                                                    disabled={quantity <= 1 || addStatus === 'loading'}
+                                                    className="px-4 py-2.5 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-100 text-lg leading-none font-medium select-none"
+                                                    aria-label="Disminuir cantidad"
+                                                >
+                                                    −
+                                                </button>
+                                                <input
+                                                    id="quantity-input"
+                                                    type="number"
+                                                    min="1"
+                                                    max={availableStock}
+                                                    value={quantity}
+                                                    onChange={(e) => {
+                                                        const val = Number(e.target.value);
+                                                        setQuantity(Math.min(availableStock, Math.max(1, val)));
+                                                    }}
+                                                    disabled={addStatus === 'loading'}
+                                                    className="w-14 text-center text-sm font-semibold text-gray-900 border-x border-gray-200 py-2.5 bg-white outline-none focus:bg-[#E6F0FF] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                                {/* Increment button */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setQuantity((q) => Math.min(availableStock, q + 1))}
+                                                    disabled={quantity >= availableStock || addStatus === 'loading'}
+                                                    className="px-4 py-2.5 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-100 text-lg leading-none font-medium select-none"
+                                                    aria-label="Aumentar cantidad"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-gray-400">
+                                                {availableStock} unidad{availableStock !== 1 ? 'es' : ''} disponible{availableStock !== 1 ? 's' : ''}
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {/* Add to cart button */}
-                        <button
-                            onClick={handleAddToCart}
-                            disabled={addStatus === 'loading' || product.stock === 0}
-                            className="flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-150 shadow-sm"
-                        >
-                            {addStatus === 'loading' ? (
-                                <>
-                                    {/* Spinner */}
-                                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                    Agregando...
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                    </svg>
-                                    {product.stock === 0 ? 'Sin stock' : 'Agregar al carrito'}
-                                </>
-                            )}
-                        </button>
+                        {(() => {
+                            const availableStock = getAvailableStock(product.id, product.stock);
+                            return (
+                                <button
+                                    onClick={handleAddToCart}
+                                    disabled={addStatus === 'loading' || product.stock === 0 || availableStock === 0}
+                                    className="flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-150 shadow-sm"
+                                >
+                                    {addStatus === 'loading' ? (
+                                        <>
+                                            {/* Spinner */}
+                                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            Agregando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                            </svg>
+                                            {product.stock === 0
+                                                ? 'Sin stock'
+                                                : availableStock === 0
+                                                    ? 'En el carrito (stock agotado)'
+                                                    : 'Agregar al carrito'}
+                                        </>
+                                    )}
+                                </button>
+                            );
+                        })()}
 
                         {/* Feedback — success */}
                         {addStatus === 'success' && (

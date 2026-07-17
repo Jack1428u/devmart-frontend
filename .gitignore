@@ -25,3 +25,4 @@ dist-ssr
 /documentation
 .env
 .env*
+.vercel

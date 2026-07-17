@@ -1,7 +1,116 @@
+import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router"
 import Branding from "../assets/branding_offer.png"
+import { allProducts } from "../services/product.service.js"
+import { getAllCategories } from "../services/category.service"
+import { ProductCard, ProductCardSkeleton } from "../components/ProductCard"
 
+// ─── Carrusel deslizable reutilizable ────────────────────────────────────────
+function HorizontalScroll({ children }) {
+    const ref = useRef(null);
+
+    const scroll = (dir) => {
+        if (!ref.current) return;
+        ref.current.scrollBy({ left: dir * 280, behavior: "smooth" });
+    };
+
+    return (
+        <div className="relative group/carousel">
+            {/* Botón izquierda */}
+            <button
+                onClick={() => scroll(-1)}
+                aria-label="Desplazar a la izquierda"
+                className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 items-center justify-center w-8 h-8 rounded-full border border-gray-200 bg-white shadow-sm text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-all duration-150 opacity-0 group-hover/carousel:opacity-100"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+            </button>
+
+            {/* Contenedor con scroll horizontal */}
+            <div
+                ref={ref}
+                className="flex gap-4 overflow-x-auto pb-3 scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+                {children}
+            </div>
+
+            {/* Botón derecha */}
+            <button
+                onClick={() => scroll(1)}
+                aria-label="Desplazar a la derecha"
+                className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 items-center justify-center w-8 h-8 rounded-full border border-gray-200 bg-white shadow-sm text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-all duration-150 opacity-0 group-hover/carousel:opacity-100"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
+            </button>
+        </div>
+    );
+}
+
+// ─── Tarjeta de categoría compacta para el carrusel ──────────────────────────
+function CategoryChip({ category }) {
+    return (
+        <Link
+            to={`/categories/${category.sku}`}
+            className="group flex-shrink-0 snap-start flex flex-col items-center justify-center gap-2 w-32 h-28 rounded-2xl border border-gray-100 hover:border-[#0066FF] hover:shadow-sm transition-all duration-200 text-center px-2"
+        >
+            <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#E6F0FF] text-[#0066FF] group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                </svg>
+            </span>
+            <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900 leading-tight line-clamp-2">
+                {category.categoryName}
+            </span>
+        </Link>
+    );
+}
+
+// ─── Skeleton para chips de categoría ────────────────────────────────────────
+function CategoryChipSkeleton() {
+    return (
+        <div className="flex-shrink-0 w-32 h-28 rounded-2xl border border-gray-100 overflow-hidden flex flex-col items-center justify-center gap-2 px-3">
+            <div className="skeleton w-10 h-10 rounded-xl" />
+            <div className="skeleton h-3 w-16 rounded" />
+        </div>
+    );
+}
+
+// ─── Tarjeta de producto compacta para el carrusel ───────────────────────────
+function ProductSlide({ product }) {
+    return (
+        <div className="flex-shrink-0 snap-start w-52">
+            <ProductCard product={product} />
+        </div>
+    );
+}
+
+// ─── Skeleton para slides de producto ────────────────────────────────────────
+function ProductSlideSkeleton() {
+    return (
+        <div className="flex-shrink-0 w-52">
+            <ProductCardSkeleton />
+        </div>
+    );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function Home() {
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        allProducts()
+            .then(data => setProducts(data.slice(0, 10)))
+            .catch(err => console.error("Error al cargar productos:", err));
+
+        getAllCategories()
+            .then(data => setCategories(data))
+            .catch(err => console.error("Error al cargar categorías:", err));
+    }, []);
+
     return (
         <main className="min-h-[calc(100vh-4rem)] bg-white">
 
@@ -26,24 +135,6 @@ export default function Home() {
                             Encuentra los mejores productos de tecnología, periféricos y accesorios.
                             Entrega rápida, precios justos y soporte real.
                         </p>
-
-                        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-                            <Link
-                                to="/products"
-                                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] transition-colors duration-150 shadow-sm"
-                            >
-                                Ver productos
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                                </svg>
-                            </Link>
-                            <Link
-                                to="/categories"
-                                className="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors duration-150"
-                            >
-                                Explorar categorías
-                            </Link>
-                        </div>
 
                         {/* Trust badges */}
                         <div className="mt-10 flex flex-wrap gap-6 justify-center md:justify-start text-xs text-gray-400 font-medium">
@@ -84,6 +175,72 @@ export default function Home() {
                             />
                         </div>
                     </div>
+                </div>
+            </section>
+
+            {/* ── Categorías carousel ── */}
+            <section className="border-t border-gray-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+                    {/* Section header */}
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                            Buscar por categoría
+                        </h2>
+                        <Link
+                            to="/categories"
+                            className="flex items-center gap-1 text-sm font-medium text-[#0066FF] hover:text-[#0054D1] transition-colors duration-150"
+                        >
+                            Ver todas
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </Link>
+                    </div>
+
+                    <HorizontalScroll>
+                        {categories.length === 0
+                            ? Array.from({ length: 8 }).map((_, i) => (
+                                <CategoryChipSkeleton key={i} />
+                            ))
+                            : categories.map(category => (
+                                <CategoryChip key={category.id} category={category} />
+                            ))
+                        }
+                    </HorizontalScroll>
+                </div>
+            </section>
+
+            {/* ── Productos recientes carousel ── */}
+            <section className="border-t border-gray-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+                    {/* Section header */}
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                            Productos
+                        </h2>
+                        <Link
+                            to="/products"
+                            className="flex items-center gap-1 text-sm font-medium text-[#0066FF] hover:text-[#0054D1] transition-colors duration-150"
+                        >
+                            Ver más
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </Link>
+                    </div>
+
+                    <HorizontalScroll>
+                        {products.length === 0
+                            ? Array.from({ length: 6 }).map((_, i) => (
+                                <ProductSlideSkeleton key={i} />
+                            ))
+                            : products.map(product => (
+                                <ProductSlide key={product.id} product={product} />
+                            ))
+                        }
+                    </HorizontalScroll>
                 </div>
             </section>
 

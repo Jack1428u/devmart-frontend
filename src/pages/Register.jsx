@@ -2,36 +2,44 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router';
 
-export default function Login() {
+export default function Register() {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState(null);
 
-    // Extraemos las funciones de nuestro contexto global
-    const { login, isLoading, isAuthenticated } = useAuth();
+    const { register, isLoading, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMsg(null);
 
-        if (!email || !password) {
-            setErrorMsg("Por favor, llena todos los campos.");
+        if (!name || !email || !password || !confirmPassword) {
+            setErrorMsg('Por favor, llena todos los campos.');
             return;
         }
 
-        // Llamamos al método login del AuthContext
-        const result = await login(email, password);
+        if (password !== confirmPassword) {
+            setErrorMsg('Las contraseñas no coinciden.');
+            return;
+        }
+
+        if (password.length < 6) {
+            setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
+        const result = await register(name, email, password);
 
         if (result.success) {
-            console.log("Sesión iniciada correctamente");
-            navigate('/'); // Redirigir al Home tras iniciar sesión
+            navigate('/');
         } else {
             setErrorMsg(result.error);
         }
     };
 
-    // Si ya está logueado, podemos mostrar un mensaje alternativo o redirigirlo
     if (isAuthenticated) {
         return (
             <main className="min-h-[calc(100vh-4rem)] bg-white flex items-center justify-center px-4">
@@ -41,29 +49,34 @@ export default function Login() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900">¡Ya has iniciado sesión!</h2>
-                    <p className="mt-2 text-sm text-gray-500">Bienvenido de vuelta.</p>
+                    <h2 className="text-2xl font-bold text-gray-900">¡Ya tienes una cuenta activa!</h2>
+                    <p className="mt-2 text-sm text-gray-500">Ya has iniciado sesión. No necesitas registrarte de nuevo.</p>
+                    <Link
+                        to="/"
+                        className="inline-flex items-center justify-center mt-6 px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] transition-colors duration-150"
+                    >
+                        Ir al inicio
+                    </Link>
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="min-h-[calc(100vh-4rem)] bg-white flex items-center justify-center px-4">
+        <main className="min-h-[calc(100vh-4rem)] bg-white flex items-center justify-center px-4 py-10">
             <div className="w-full max-w-md">
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    {/* Logo mark */}
                     <span className="inline-flex items-center gap-1 text-2xl font-bold tracking-tight mb-6">
                         <span className="text-[#0066FF]">Dev</span>
                         <span className="text-gray-900">Mart</span>
                     </span>
                     <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                        Bienvenido de vuelta
+                        Crea tu cuenta
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        Inicia sesión en tu cuenta para continuar
+                        Regístrate y empieza a comprar hoy
                     </p>
                 </div>
 
@@ -85,16 +98,35 @@ export default function Login() {
 
                     <form onSubmit={handleSubmit} className="space-y-5">
 
+                        {/* Name field */}
+                        <div>
+                            <label
+                                htmlFor="register-name"
+                                className="block text-sm font-medium text-gray-700 mb-1.5"
+                            >
+                                Nombre completo
+                            </label>
+                            <input
+                                id="register-name"
+                                type="text"
+                                autoComplete="name"
+                                placeholder="Tu nombre"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full px-4 py-3 text-sm text-gray-900 rounded-xl border border-gray-200 bg-white outline-none placeholder:text-gray-400 focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 transition-all duration-150"
+                            />
+                        </div>
+
                         {/* Email field */}
                         <div>
                             <label
-                                htmlFor="login-email"
+                                htmlFor="register-email"
                                 className="block text-sm font-medium text-gray-700 mb-1.5"
                             >
                                 Correo Electrónico
                             </label>
                             <input
-                                id="login-email"
+                                id="register-email"
                                 type="email"
                                 autoComplete="email"
                                 placeholder="correo@ejemplo.com"
@@ -107,25 +139,44 @@ export default function Login() {
                         {/* Password field */}
                         <div>
                             <label
-                                htmlFor="login-password"
+                                htmlFor="register-password"
                                 className="block text-sm font-medium text-gray-700 mb-1.5"
                             >
                                 Contraseña
                             </label>
                             <input
-                                id="login-password"
+                                id="register-password"
                                 type="password"
-                                autoComplete="current-password"
-                                placeholder="••••••••"
+                                autoComplete="new-password"
+                                placeholder="Mínimo 6 caracteres"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-4 py-3 text-sm text-gray-900 rounded-xl border border-gray-200 bg-white outline-none placeholder:text-gray-400 focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 transition-all duration-150"
                             />
                         </div>
 
+                        {/* Confirm password field */}
+                        <div>
+                            <label
+                                htmlFor="register-confirm-password"
+                                className="block text-sm font-medium text-gray-700 mb-1.5"
+                            >
+                                Confirmar contraseña
+                            </label>
+                            <input
+                                id="register-confirm-password"
+                                type="password"
+                                autoComplete="new-password"
+                                placeholder="Repite tu contraseña"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="w-full px-4 py-3 text-sm text-gray-900 rounded-xl border border-gray-200 bg-white outline-none placeholder:text-gray-400 focus:border-[#0066FF] focus:ring-2 focus:ring-[#0066FF]/20 transition-all duration-150"
+                            />
+                        </div>
+
                         {/* Submit */}
                         <button
-                            id="login-submit"
+                            id="register-submit"
                             type="submit"
                             disabled={isLoading}
                             className="w-full flex items-center justify-center gap-2 px-6 py-3.5 mt-2 rounded-xl text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-150 shadow-sm"
@@ -136,22 +187,22 @@ export default function Login() {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                     </svg>
-                                    Verificando...
+                                    Creando cuenta...
                                 </>
                             ) : (
-                                'Iniciar Sesión'
+                                'Crear cuenta'
                             )}
                         </button>
                     </form>
 
-                    {/* Link to register */}
+                    {/* Link to login */}
                     <p className="mt-6 text-center text-sm text-gray-500">
-                        ¿No tienes cuenta?{' '}
+                        ¿Ya tienes cuenta?{' '}
                         <Link
-                            to="/register"
+                            to="/login"
                             className="font-semibold text-[#0066FF] hover:text-[#0054D1] transition-colors duration-150"
                         >
-                            Regístrate
+                            Inicia sesión
                         </Link>
                     </p>
                 </div>
