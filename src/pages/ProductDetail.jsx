@@ -38,7 +38,15 @@ export function ProductDetail() {
         setAddError(null);
 
         try {
-            await addCartItem(product.id, quantity, product.stock);
+            // productSnapshot permite al modo guest guardar los datos del producto en localStorage
+            const productSnapshot = {
+                productName: product.productName,
+                price: product.price,
+                url: product.url ?? null,
+                sku: product.sku ?? null,
+                stock: product.stock,
+            };
+            await addCartItem(product.id, quantity, product.stock, productSnapshot);
             setAddStatus('success');
             // Resetear la cantidad a 1 tras agregar exitosamente
             setQuantity(1);

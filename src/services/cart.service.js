@@ -2,6 +2,12 @@ import { refreshTokenService } from './auth.service';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// =====================================================
+// KEY del carrito de invitado en localStorage
+// Formato: [{ productId, quantity, productName, price, url, sku }]
+// =====================================================
+const GUEST_CART_KEY = 'guest_cart';
+
 /**
  * Obtiene el token del localStorage y retorna los headers necesarios
  * para rutas protegidas por el middleware userExtractor del backend.
@@ -54,6 +60,43 @@ const fetchWithRefresh = async (url, options) => {
 
     return response;
 };
+
+// =====================================================
+// HELPERS — Carrito de invitado (guest cart)
+// =====================================================
+
+/**
+ * Lee el carrito guest del localStorage.
+ * Retorna un array vacío si no existe o está corrupto.
+ * @returns {Array<{productId: string, quantity: number, productName: string, price: string, url: string|null, sku: string|null}>}
+ */
+export const getGuestCart = () => {
+    try {
+        return JSON.parse(localStorage.getItem(GUEST_CART_KEY)) || [];
+    } catch {
+        return [];
+    }
+};
+
+/**
+ * Persiste el carrito guest en localStorage.
+ * @param {Array} items - Array de items del carrito guest.
+ */
+export const saveGuestCart = (items) => {
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+};
+
+/**
+ * Elimina el carrito guest del localStorage.
+ * Se llama tras una fusión exitosa para evitar re-fusiones en futuros logins.
+ */
+export const clearGuestCart = () => {
+    localStorage.removeItem(GUEST_CART_KEY);
+};
+
+// =====================================================
+// SERVICIOS — Carrito autenticado (API)
+// =====================================================
 
 /**
  * Agrega un item al carrito del usuario autenticado.
@@ -128,6 +171,37 @@ export const removeFromCart = async (cartDetailId) => {
         return data;
     } catch (error) {
         console.error('Error in removeFromCart:', error);
+        throw error;
+    }
+};
+
+/**
+ * Fusiona el carrito guest (localStorage) con el carrito persistente del usuario autenticado.
+ * El backend valida existencia de productos y stock disponible.
+ * Solo se envían productId y quantity; el backend no acepta datos de producto del cliente.
+ * @param {Array<{productId: string, quantity: number}>} items - Items del carrito guest.
+ * @returns {Promise<object>} El carrito DB actualizado tras la fusión.
+ */
+export const mergeCartService = async (items) => {
+    try {
+        // Solo enviamos productId y quantity; el resto (nombre, precio) lo resuelve el backend
+        const payload = items.map(({ productId, quantity }) => ({ productId, quantity }));
+
+        const response = await fetchWithRefresh(`${API_URL}/cart/merge`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ items: payload }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || data.message || 'Error al fusionar el carrito');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error in mergeCartService:', error);
         throw error;
     }
 };

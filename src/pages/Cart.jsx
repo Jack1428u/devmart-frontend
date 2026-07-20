@@ -6,32 +6,6 @@ export function Cart() {
     const { isAuthenticated } = useAuth();
     const { cartDetails, totalItems, subtotal, isCartLoading, cartError, removeCartItem } = useCart();
 
-    // --- Estado: usuario no autenticado ---
-    if (!isAuthenticated) {
-        return (
-            <main className="min-h-[calc(100vh-4rem)] bg-white flex items-center justify-center px-4">
-                <section className="text-center max-w-sm mx-auto py-20">
-                    {/* Icon */}
-                    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#E6F0FF] text-[#0066FF] mx-auto mb-6">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                        </svg>
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Mi Carrito</h1>
-                    <p className="mt-2 text-sm text-gray-500">
-                        Debes iniciar sesión para ver tu carrito de compras.
-                    </p>
-                    <Link
-                        to="/login"
-                        className="mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] transition-colors duration-150 shadow-sm"
-                    >
-                        Iniciar sesión
-                    </Link>
-                </section>
-            </main>
-        );
-    }
-
     // --- Estado: cargando carrito ---
     if (isCartLoading) {
         return (
@@ -97,6 +71,24 @@ export function Cart() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                         </svg>
                     </Link>
+                    {/* Banner de invitado en carrito vacío */}
+                    {!isAuthenticated && (
+                        <div className="mt-6 px-4 py-3 rounded-xl bg-[#E6F0FF] border border-[#B8D4FF] text-sm text-left">
+                            <p className="text-[#0041A3] font-medium mb-2">
+                                ¿Ya tienes una cuenta?
+                            </p>
+                            <Link
+                                to="/login"
+                                className="inline-flex items-center gap-1.5 text-[#0066FF] font-semibold hover:underline"
+                            >
+                                Inicia sesión
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                                </svg>
+                            </Link>
+                            <span className="text-gray-500"> para ver tu carrito guardado.</span>
+                        </div>
+                    )}
                 </section>
             </main>
         );
@@ -115,9 +107,24 @@ export function Cart() {
         <main className="min-h-[calc(100vh-4rem)] bg-white">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-4">
                     Mi Carrito
                 </h1>
+
+                {/* ── Banner de invitado ── */}
+                {!isAuthenticated && (
+                    <div className="mb-6 flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-[#E6F0FF] border border-[#B8D4FF] text-sm">
+                        <p className="text-[#0041A3] font-medium">
+                            Inicia sesión para guardar tu carrito y no perder tus productos.
+                        </p>
+                        <Link
+                            to="/login"
+                            className="flex-shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-[#0066FF] hover:bg-[#0054D1] transition-colors duration-150"
+                        >
+                            Iniciar sesión
+                        </Link>
+                    </div>
+                )}
 
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
 
