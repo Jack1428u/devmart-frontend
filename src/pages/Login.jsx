@@ -27,7 +27,8 @@ export default function Login() {
             console.log("Sesión iniciada correctamente");
             navigate('/'); // Redirigir al Home tras iniciar sesión
         } else {
-            setErrorMsg(result.error);
+            console.error("Error signin");
+            setErrorMsg("Fallo al iniciar sesión. Verifica tus credenciales e intenta de nuevo.");
         }
     };
 
